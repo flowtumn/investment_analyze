@@ -33,6 +33,10 @@ func (self *NikkeiParser) ParseLine(csvLine string) (*InvestmentElemDate, error)
 		return nil, err
 	}
 
+	if 5 != len(record) {
+		return nil, errors.New("parser.Read error.")
+	}
+
 	date := self.ConvertDate(record[0])
 	if nil == date {
 		return nil, errors.New("ConvertDate error.")

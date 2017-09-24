@@ -31,7 +31,7 @@ func (self *AnalyzeResult) Dump() {
 	}
 }
 
-func analyze(csvPath string, reverse bool, parser *NikkeiParser) (*AnalyzeResult, error) {
+func analyze(csvPath string, reverse bool, parser CsvParser) (*AnalyzeResult, error) {
 	fp, err := os.Open(csvPath)
 	if nil != err {
 		return nil, err

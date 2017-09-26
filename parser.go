@@ -13,11 +13,11 @@ type Price struct {
 	Close float64
 }
 
-type InvestmentElemDate struct {
+type InvestmentElemData struct {
 	Date  Date
 	Price Price
 }
 
 type CsvParser interface {
-	ParseLine(csvLine string) (*InvestmentElemDate, error)
+	ParseLine(csvLine string) (*InvestmentElemData, error)
 }

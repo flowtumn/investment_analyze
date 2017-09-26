@@ -26,14 +26,14 @@ func (self *NikkeiParser) ConvertDate(date string) *Date {
 	}
 }
 
-func (self *NikkeiParser) ParseLine(csvLine string) (*InvestmentElemDate, error) {
+func (self *NikkeiParser) ParseLine(csvLine string) (*InvestmentElemData, error) {
 	parser := csv.NewReader(strings.NewReader(csvLine))
 	record, err := parser.Read()
 	if nil != err {
 		return nil, err
 	}
 
-	if 5 != len(record) {
+	if 5 > len(record) {
 		return nil, errors.New("parser.Read error.")
 	}
 
@@ -42,7 +42,7 @@ func (self *NikkeiParser) ParseLine(csvLine string) (*InvestmentElemDate, error)
 		return nil, errors.New("ConvertDate error.")
 	}
 
-	return &InvestmentElemDate{
+	return &InvestmentElemData{
 		Date: *date,
 		Price: Price{
 			Open:  ToFloat64(record[1], 0.0),

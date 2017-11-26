@@ -10,6 +10,7 @@ import (
 
 type AnalyzeData struct {
 	Count               int64
+	TotalCost			int64
 	Score               float64
 	PreviousHigherCount int64
 	PreviousSameCount   int64
@@ -17,7 +18,8 @@ type AnalyzeData struct {
 }
 
 func (self AnalyzeData) ToCsv() string {
-	return fmt.Sprintf("%d,%g,%d,%d,%d", self.Count, self.Score, self.PreviousHigherCount, self.PreviousLowerCount, self.PreviousSameCount)
+	//sample数, TotalCost, Costの平均値, Score(その日に預けていたらの増減), 前日より高値の回数,前日より低値の回数,前日と同値の回数
+	return fmt.Sprintf("%d,%d,%d,%g,%d,%d,%d", self.Count, self.TotalCost, self.TotalCost / self.Count, self.Score, self.PreviousHigherCount, self.PreviousLowerCount, self.PreviousSameCount)
 }
 
 type AnalyzeResult struct {
@@ -42,6 +44,7 @@ func (self *AnalyzeResult) AddData(yesterdayData, newData InvestmentElemData) {
 	}
 
 	v.Count = v.Count + 1
+	v.TotalCost = v.TotalCost + (int64)(newData.Price.Close)
 
 	//本日が前日に比べて高値で終わったのかを計算。
 	v.Score = newData.Price.Close - yesterdayData.Price.Close
@@ -58,25 +61,29 @@ func (self *AnalyzeResult) AddData(yesterdayData, newData InvestmentElemData) {
 	self.HistoryDatas[newData.Date.Day] = v
 }
 
-func (self *AnalyzeResult) Dump() {
-	fmt.Printf("TotalSamples: %d\n", self.TotalCount)
-	for i := 1; i <= 31; i++ {
-		fmt.Printf("Day %02d: %+v\n", i, self.HistoryDatas[i])
+func (self *AnalyzeResult) DumpCSV(path string) error {
+	fp, err := os.Create(path)
+	if nil != err {
+		return err
 	}
-}
 
-func (self *AnalyzeResult) DumpCSV() {
-	fmt.Printf("TotalSamples: %d\n", self.TotalCount)
+	defer func() {
+		fp.Close()
+	}()
+
 	for i := 1; i <= 31; i++ {
 		v, ok := self.HistoryDatas[i].(AnalyzeData)
 		if !ok {
 			continue
 		}
-		fmt.Printf("%02d,%s\n", i, v.ToCsv())
+		fp.Write([]byte(fmt.Sprintf("%02d,%s\n", i, v.ToCsv())))
 	}
+
+	fp.Write([]byte(fmt.Sprintf("TotalSamples: %d", self.TotalCount)))
+	return nil
 }
 
-func analyze(csvPath string, reverse bool, parser CsvParser) (*AnalyzeResult, error) {
+func analyze(csvPath string, parser CsvParser) (*AnalyzeResult, error) {
 	fp, err := os.Open(csvPath)
 	if nil != err {
 		return nil, err
@@ -118,11 +125,13 @@ func analyze(csvPath string, reverse bool, parser CsvParser) (*AnalyzeResult, er
 }
 
 func main() {
-	result, err := analyze(os.Args[1], true, &NikkeiParser{})
-	if nil != err {
-		panic(err)
+	for i := 1 ; i < len(os.Args); i++ {
+		result, err := analyze(os.Args[i], &TrustParser{})
+		if nil == err {
+			savePath := os.Args[i] + "_analyze.csv"
+			result.DumpCSV(savePath)
+		} else {
+			fmt.Printf("analyze error: %s\n", err.Error())
+		}
 	}
-
-	result.Dump()
-	result.DumpCSV()
 }
